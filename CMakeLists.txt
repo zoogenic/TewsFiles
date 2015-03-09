@@ -44,3 +44,22 @@ configure_file ( src/${PROJECT}Version.cpp.in
 include_directories ( build
                       src
                     )
+#--------------------------------------------------------------------------------------------------
+#
+#--------------------------------------------------------------------------------------------------
+set ( HEADERS_FILES
+    src/${PROJECT}Version.h
+    
+    )
+
+set ( SOURES_FILES
+    build/${PROJECT}Version.cpp
+    src/tewsfiles.cpp
+    )
+
+#--------------------------------------------------------------------------------------------------
+#   Adding executables
+#--------------------------------------------------------------------------------------------------
+
+add_executable (${EXECUTABLE} ${HEADERS_FILES} ${SOURES_FILES} src/tewsfiles.cpp )
+
