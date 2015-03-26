@@ -26,7 +26,7 @@ set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR} )
 set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${BIN_DIR} )
 set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${BIN_DIR} )
 
-set ( CMAKE_CXX_FLAGS "-W -Wall -std=c++11" )
+set ( CMAKE_CXX_FLAGS "-W -Wall -std=c++11 -std=c++1y" )
 set ( CMAKE_CXX_FLAGS_DEBUG "-O0 -g3" )
 set ( CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DBOOST_DISABLE_ASSERTS" )
 
@@ -47,19 +47,38 @@ include_directories ( build
 #--------------------------------------------------------------------------------------------------
 #
 #--------------------------------------------------------------------------------------------------
-set ( HEADERS_FILES
+set ( HEADERS
     src/${PROJECT}Version.h
     
     )
 
-set ( SOURES_FILES
+set ( SOURCES
     build/${PROJECT}Version.cpp
     src/tewsfiles.cpp
     )
 
 #--------------------------------------------------------------------------------------------------
+#   Libraries list to link with
+#--------------------------------------------------------------------------------------------------
+set ( LIBRARIES
+    curl
+    )
+
+
+#--------------------------------------------------------------------------------------------------
 #   Adding executables
 #--------------------------------------------------------------------------------------------------
 
-add_executable (${EXECUTABLE} ${HEADERS_FILES} ${SOURES_FILES} src/tewsfiles.cpp )
+add_executable (${EXECUTABLE} ${HEADERS} ${SOURES} src/tewsfiles.cpp )
+target_link_libraries ( ${EXECUTABLE} ${LIBRARIES} )
+#--------------------------------------------------------------------------------------------------
+#   target distclean
+#--------------------------------------------------------------------------------------------------
 
+add_custom_target ( distclean )
+add_custom_command( TARGET distclean
+    POST_BUILD
+    COMMAND make clean && ls | xargs rm -r
+    COMMENT "Cleanup all targets"
+    VERBATIM
+    )
