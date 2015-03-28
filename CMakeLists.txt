@@ -39,6 +39,11 @@ configure_file ( src/${PROJECT}Version.cpp.in
                      ${PROJECT}Version.cpp )
 
 #--------------------------------------------------------------------------------------------------
+#   Locate boost
+#--------------------------------------------------------------------------------------------------
+find_package(Boost COMPONENTS program_options filesystem system REQUIRED)
+
+#--------------------------------------------------------------------------------------------------
 # Search paths (-I)
 #--------------------------------------------------------------------------------------------------
 include_directories ( build
@@ -62,6 +67,7 @@ set ( SOURCES
 #--------------------------------------------------------------------------------------------------
 set ( LIBRARIES
     curl
+    z
     )
 
 
@@ -70,7 +76,14 @@ set ( LIBRARIES
 #--------------------------------------------------------------------------------------------------
 
 add_executable (${EXECUTABLE} ${HEADERS} ${SOURES} src/tewsfiles.cpp )
-target_link_libraries ( ${EXECUTABLE} ${LIBRARIES} )
+target_link_libraries (
+    ${EXECUTABLE}
+    ${LIBRARIES}
+    ${Boost_PROGRAM_OPTIONS_LIBRARY}
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
+)
+
 #--------------------------------------------------------------------------------------------------
 #   target distclean
 #--------------------------------------------------------------------------------------------------
