@@ -45,6 +45,38 @@ namespace Private
         return res;
     }
 
+    int processCommandLine(int argc, char *argv[], std::string &output_dir_str)
+    {
+        namespace bpo = boost::program_options;
+
+        bpo::options_description desc("Program options:");
+        desc.add_options()
+            ("help,h", "Show help")
+            ("output,o", bpo::value<std::string>(&output_dir_str), "Output folder")
+            ;
+        bpo::variables_map vm;
+
+        try
+        {
+            const bpo::parsed_options parsed = bpo::command_line_parser(argc, argv).options(desc).run();
+            bpo::store(parsed, vm);
+        }
+        catch(const std::exception &e)
+        {
+            std::cout << e.what() << std::endl;
+            return 1;
+        }
+
+        bpo::notify(vm);
+        if (vm.count("help"))
+        {
+            std::cout << desc << std::endl;
+            return 1;
+        }
+
+        return 0;
+    }
+
     namespace Predicate
     {
         struct CheckTag
@@ -65,40 +97,19 @@ namespace Private
 
 int main(int argc, char *argv[])
 {
-    namespace bpo = boost::program_options;
     namespace bpxml = boost::property_tree::xml_parser;
     namespace ba = boost::adaptors;
     namespace bfs = boost::filesystem;
 
-    // processing command line arguments -- begin
-    bpo::options_description desc("Program options:");
-    std::string output_dir_str;
-    desc.add_options()
-        ("help,h", "Show help")
-        ("output,o", bpo::value<std::string>(&output_dir_str), "Output folder")
-        ;
-    bpo::variables_map vm;
-
-    try
+    // processing command line arguments
+    std::string output_dir_str;  // TODO: bfs::path
+    int parsed = Private::processCommandLine(argc, argv, output_dir_str);
+    if (0 != parsed)
     {
-        const bpo::parsed_options parsed = bpo::command_line_parser(argc, argv).options(desc).run();
-        bpo::store(parsed, vm);
-    }
-    catch(const std::exception &e)
-    {
-        std::cout << e.what() << std::endl;
-        return 1;
+        return parsed;
     }
 
-    bpo::notify(vm);
-    if (vm.count("help"))
-    {
-        std::cout << desc << std::endl;
-        return 1;
-    }
-    // processing command line arguments -- end
-
-    bfs::path output_dir(output_dir_str); // TODO: is ok path?
+    bfs::path output_dir(output_dir_str); // TODO: does path exist?
 
     static const std::string rss_url = "http://downloads.bbc.co.uk/podcasts/worldservice/tae/rss.xml";
     Private::downloadUrl(rss_url, Private::outfilename);
