@@ -31,8 +31,8 @@ namespace Private
         CURL *curl;
         FILE *fp;
         CURLcode res = CURLE_FAILED_INIT;
-        curl = curl_easy_init();
-        if (curl)
+        curl = curl_easy_init(); // TODO: try multi interface instead of easy interface
+        if (curl)                // TODO: or maybe do not close connection
         {
             fp = fopen(out,"wb");
             curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
@@ -130,8 +130,21 @@ int main(int argc, char *argv[])
         for (auto prop: item.second | ba::filtered(Private::Predicate::CheckTag("link")))
         {
             const std::string suburl = prop.second.get_value<std::string>().substr(59, 6);
-            Private::downloadUrl(podcast_head + suburl
-                    , (output_dir / "pages" / (suburl + ".html")).string().c_str());
+            const bfs::path page_file = pages_dir / (suburl + ".html");
+            if (true == bfs::exists(page_file))
+            {
+                std::cout << "File: \"" << page_file << "\" is downloaded already." << std::endl;
+            }
+            else
+            {
+                Private::downloadUrl(podcast_head + suburl, page_file.string().c_str());
+            }
         }
+    }
+
+    for (auto file: boost::make_iterator_range(bfs::directory_iterator(pages_dir), bfs::directory_iterator())
+            | ba::filtered(static_cast<bool (*)(const bfs::path &)>(&bfs::is_regular_file)))
+    {
+        std::cout << file << std::endl;
     }
 }
