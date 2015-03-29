@@ -13,6 +13,7 @@
 #include <curl/curl.h>
 
 namespace bpt = boost::property_tree;
+namespace bfs = boost::filesystem;
 
 namespace Private
 {
@@ -45,14 +46,14 @@ namespace Private
         return res;
     }
 
-    int processCommandLine(int argc, char *argv[], std::string &output_dir_str)
+    int processCommandLine(int argc, char *argv[], bfs::path &output_dir)
     {
         namespace bpo = boost::program_options;
 
         bpo::options_description desc("Program options:");
         desc.add_options()
             ("help,h", "Show help")
-            ("output,o", bpo::value<std::string>(&output_dir_str), "Output folder")
+            ("output,o", bpo::value<bfs::path>(&output_dir), "Output folder")
             ;
         bpo::variables_map vm;
 
@@ -71,7 +72,13 @@ namespace Private
         if (vm.count("help"))
         {
             std::cout << desc << std::endl;
-            return 1;
+            return 2;
+        }
+
+        if (false == bfs::exists(output_dir))
+        {
+            std::cout << "Path does not exist" << std::endl;
+            return 3;
         }
 
         return 0;
@@ -99,23 +106,23 @@ int main(int argc, char *argv[])
 {
     namespace bpxml = boost::property_tree::xml_parser;
     namespace ba = boost::adaptors;
-    namespace bfs = boost::filesystem;
 
     // processing command line arguments
-    std::string output_dir_str;  // TODO: bfs::path
-    int parsed = Private::processCommandLine(argc, argv, output_dir_str);
+    bfs::path output_dir;
+    int parsed = Private::processCommandLine(argc, argv, output_dir);
     if (0 != parsed)
     {
         return parsed;
     }
-
-    bfs::path output_dir(output_dir_str); // TODO: does path exist?
 
     static const std::string rss_url = "http://downloads.bbc.co.uk/podcasts/worldservice/tae/rss.xml";
     Private::downloadUrl(rss_url, Private::outfilename);
 
     bpt::ptree pt;
     bpt::read_xml(Private::outfilename, pt, bpxml::trim_whitespace | bpxml::no_comments);
+
+    const bfs::path pages_dir = output_dir / "pages";
+    bfs::create_directories(pages_dir);
 
     static const std::string podcast_head = "http://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak/ep-";
     for (auto item: pt.get_child("rss.channel") | ba::filtered(Private::Predicate::CheckTag("item")))
@@ -124,7 +131,7 @@ int main(int argc, char *argv[])
         {
             const std::string suburl = prop.second.get_value<std::string>().substr(59, 6);
             Private::downloadUrl(podcast_head + suburl
-                    , (output_dir / (suburl + ".html")).string().c_str());
+                    , (output_dir / "pages" / (suburl + ".html")).string().c_str());
         }
     }
 }
