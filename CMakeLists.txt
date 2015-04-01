@@ -41,7 +41,7 @@ configure_file ( src/${PROJECT}Version.cpp.in
 #--------------------------------------------------------------------------------------------------
 #   Locate boost
 #--------------------------------------------------------------------------------------------------
-find_package(Boost COMPONENTS program_options filesystem system REQUIRED)
+find_package(Boost COMPONENTS program_options filesystem system regex REQUIRED)
 
 #--------------------------------------------------------------------------------------------------
 # Search paths (-I)
@@ -68,6 +68,7 @@ set ( SOURCES
 set ( LIBRARIES
     curl
     z
+    boost_regex
     )
 
 
@@ -82,6 +83,7 @@ target_link_libraries (
     ${Boost_PROGRAM_OPTIONS_LIBRARY}
     ${Boost_FILESYSTEM_LIBRARY}
     ${Boost_SYSTEM_LIBRARY}
+    #${Boost_REGEX_LIBRARY}
 )
 
 #--------------------------------------------------------------------------------------------------

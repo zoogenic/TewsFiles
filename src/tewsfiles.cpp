@@ -9,6 +9,7 @@
 #include <boost/range/adaptors.hpp>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 
 #include <curl/curl.h>
 
@@ -145,6 +146,23 @@ int main(int argc, char *argv[])
     for (auto file: boost::make_iterator_range(bfs::directory_iterator(pages_dir), bfs::directory_iterator())
             | ba::filtered(static_cast<bool (*)(const bfs::path &)>(&bfs::is_regular_file)))
     {
-        std::cout << file << std::endl;
+//http://downloads.bbc.co.uk/learningenglish/features/tews/150317_TEWS_stab_in_the_dark_v1.pdf
+//http://downloads.bbc.co.uk/learningenglish/features/tews/150317_tews_a_stab_in_the_dark_download.mp3
+        bfs::ifstream strm(file, std::ios_base::in);
+        if (!strm)
+        {
+            std::cout << "Cannot open file \"" << file << "\"" << std::endl;
+            continue;
+        }
+
+        boost::regex re("http\:");
+        for (std::string line; std::getline(strm, line); )
+        {
+            for (boost::sregex_token_iterator i(line.begin(), line.end(), re, 1), ie; i != ie; ++i)
+            {
+                std::cout << line << std::endl;
+            }
+        }
+//        std::cout << file << std::endl;
     }
 }
