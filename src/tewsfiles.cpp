@@ -10,6 +10,7 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/regex.hpp>
 
 #include <curl/curl.h>
 
@@ -134,7 +135,7 @@ int main(int argc, char *argv[])
             const bfs::path page_file = pages_dir / (suburl + ".html");
             if (true == bfs::exists(page_file))
             {
-                std::cout << "File: \"" << page_file << "\" is downloaded already." << std::endl;
+                std::cout << "File: " << page_file << " is downloaded already." << std::endl;
             }
             else
             {
@@ -155,14 +156,13 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        boost::regex re("http\:");
+        boost::regex re("(http:([\\-\\w\\d\\.\\/]+)\\.mp3)", boost::regex_constants::perl);
         for (std::string line; std::getline(strm, line); )
         {
-            for (boost::sregex_token_iterator i(line.begin(), line.end(), re, 1), ie; i != ie; ++i)
+            for (boost::sregex_token_iterator i(line.begin(), line.end(), re, 0), ie; i != ie; ++i)
             {
-                std::cout << line << std::endl;
+                std::cout << *i << std::endl;
             }
         }
-//        std::cout << file << std::endl;
     }
 }
