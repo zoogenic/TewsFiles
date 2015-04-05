@@ -19,7 +19,7 @@ namespace bfs = boost::filesystem;
 
 namespace Private
 {
-    static const char outfilename[FILENAME_MAX] = "/tmp/tews_file";
+    static const char outfilename[] = "/tmp/tews_file";
 
     size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
     {
@@ -117,52 +117,71 @@ int main(int argc, char *argv[])
         return parsed;
     }
 
-    static const std::string rss_url = "http://downloads.bbc.co.uk/podcasts/worldservice/tae/rss.xml";
-    Private::downloadUrl(rss_url, Private::outfilename);
+//    static const std::string rss_url = "http://downloads.bbc.co.uk/podcasts/worldservice/tae/rss.xml";
+    static const std::string new_url = "http://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak/ep-150324";
+    Private::downloadUrl(new_url, Private::outfilename);
 
-    bpt::ptree pt;
-    bpt::read_xml(Private::outfilename, pt, bpxml::trim_whitespace | bpxml::no_comments);
-
-    const bfs::path pages_dir = output_dir / "pages";
-    bfs::create_directories(pages_dir);
-
-    static const std::string podcast_head = "http://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak/ep-";
-    for (auto item: pt.get_child("rss.channel") | ba::filtered(Private::Predicate::CheckTag("item")))
     {
-        for (auto prop: item.second | ba::filtered(Private::Predicate::CheckTag("link")))
+        std::cout << "* trying to open and read: " << Private::outfilename << std::endl;
+        std::ifstream outfile_stream(Private::outfilename);
+        if (false == outfile_stream.is_open())
         {
-            const std::string suburl = prop.second.get_value<std::string>().substr(59, 6);
-            const bfs::path page_file = pages_dir / (suburl + ".html");
-            if (true == bfs::exists(page_file))
-            {
-                std::cout << "File: " << page_file << " is downloaded already." << std::endl;
-            }
-            else
-            {
-                Private::downloadUrl(podcast_head + suburl, page_file.string().c_str());
-            }
+            perror((std::string("error while openning file ") + Private::outfilename).c_str());
         }
+        for (std::string line; std::getline(outfile_stream, line); )
+        {
+            std::cout << line << std::endl;
+        }
+        if (true == outfile_stream.bad())
+        {
+            perror((std::string("error while reading file: ") + Private::outfilename).c_str());
+        }
+        outfile_stream.close();
     }
 
-    for (auto file: boost::make_iterator_range(bfs::directory_iterator(pages_dir), bfs::directory_iterator())
-            | ba::filtered(static_cast<bool (*)(const bfs::path &)>(&bfs::is_regular_file)))
-    {
-//http://downloads.bbc.co.uk/learningenglish/features/tews/150317_TEWS_stab_in_the_dark_v1.pdf
-//http://downloads.bbc.co.uk/learningenglish/features/tews/150317_tews_a_stab_in_the_dark_download.mp3
-        bfs::ifstream strm(file, std::ios_base::in);
-        if (!strm)
-        {
-            std::cout << "Cannot open file \"" << file << "\"" << std::endl;
-            continue;
-        }
+//    bpt::ptree pt;
+//    bpt::read_xml(Private::outfilename, pt, bpxml::trim_whitespace | bpxml::no_comments);
+//
+//    const bfs::path pages_dir = output_dir / "pages";
+//    bfs::create_directories(pages_dir);
+//
+//    static const std::string podcast_head = "http://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak/ep-";
+//    for (auto item: pt.get_child("rss.channel") | ba::filtered(Private::Predicate::CheckTag("item")))
+//    {
+//        for (auto prop: item.second | ba::filtered(Private::Predicate::CheckTag("link")))
+//        {
+//            const std::string suburl = prop.second.get_value<std::string>().substr(59, 6);
+//            const bfs::path page_file = pages_dir / (suburl + ".html");
+//            if (true == bfs::exists(page_file))
+//            {
+//                std::cout << "File: " << page_file << " is downloaded already." << std::endl;
+//            }
+//            else
+//            {
+//                Private::downloadUrl(podcast_head + suburl, page_file.string().c_str());
+//            }
+//        }
+//    }
 
-        boost::regex re("(http:([\\-\\w\\d\\.\\/]+)\\.mp3)", boost::regex_constants::perl);
-        for (std::string line; std::getline(strm, line); )
-        {
-            for (boost::sregex_token_iterator i(line.begin(), line.end(), re, 0), ie; i != ie; ++i)
-            {
-                std::cout << *i << std::endl;
-            }
-        }
-    }
+//    for (auto file: boost::make_iterator_range(bfs::directory_iterator(pages_dir), bfs::directory_iterator())
+//            | ba::filtered(static_cast<bool (*)(const bfs::path &)>(&bfs::is_regular_file)))
+//    {
+////http://downloads.bbc.co.uk/learningenglish/features/tews/150317_TEWS_stab_in_the_dark_v1.pdf
+////http://downloads.bbc.co.uk/learningenglish/features/tews/150317_tews_a_stab_in_the_dark_download.mp3
+//        bfs::ifstream strm(file, std::ios_base::in);
+//        if (!strm)
+//        {
+//            std::cout << "Cannot open file \"" << file << "\"" << std::endl;
+//            continue;
+//        }
+//
+//        boost::regex re("(http:([\\-\\w\\d\\.\\/]+)\\.mp3)", boost::regex_constants::perl);
+//        for (std::string line; std::getline(strm, line); )
+//        {
+//            for (boost::sregex_token_iterator i(line.begin(), line.end(), re, 0), ie; i != ie; ++i)
+//            {
+//                std::cout << *i << std::endl;
+//            }
+//        }
+//    }
 }
