@@ -86,6 +86,29 @@ namespace Private
         return 0;
     }
 
+    void searchForRegex(const std::string &filename, std::set<std::string> &pages, const boost::regex &re)
+    { // read file
+        std::cout << "* trying to open and read: " << filename << std::endl;
+        std::ifstream outfile_stream(filename);
+        if (false == outfile_stream.is_open())
+        {
+            perror((std::string("error while openning file ") + filename).c_str());
+        }
+        for (std::string line; std::getline(outfile_stream, line); )
+        {
+            std::copy(boost::sregex_token_iterator(line.begin(), line.end(), re, 0)
+                    ,   boost::sregex_token_iterator()
+                    ,   std::inserter(pages, pages.begin())
+                    );
+        }
+
+        if (true == outfile_stream.bad())
+        {
+            perror((std::string("error while reading file: ") + filename).c_str());
+        }
+        outfile_stream.close();
+    }
+
     namespace Predicate
     {
         struct CheckTag
@@ -117,27 +140,48 @@ int main(int argc, char *argv[])
         return parsed;
     }
 
-//    static const std::string rss_url = "http://downloads.bbc.co.uk/podcasts/worldservice/tae/rss.xml";
     static const std::string new_url = "http://www.bbc.co.uk/learningenglish/english/features/the-english-we-speak/ep-150324";
     Private::downloadUrl(new_url, Private::outfilename);
 
+    std::set<std::string> pages;
+    std::copy(pages.begin(), pages.end(), std::ostream_iterator<std::string>(std::cout, "\n"));
+    std::cout << pages.size() << std::endl;
+    const bfs::path pages_dir = output_dir / "pages";
+    bfs::create_directories(pages_dir);
+
+    //  /learningenglish/english/features/the-english-we-speak/ep-19082014
+    const boost::regex re("(/learningenglish/english/features/the-english-we-speak/ep-(\\d+))", boost::regex_constants::perl);
+    Private::searchForRegex(Private::outfilename, pages, re);
+
+    for (auto url: pages)
     {
-        std::cout << "* trying to open and read: " << Private::outfilename << std::endl;
-        std::ifstream outfile_stream(Private::outfilename);
-        if (false == outfile_stream.is_open())
+        const std::string suburl = url.substr(url.find_last_of("/") + 1) + ".html";
+        const bfs::path page_file = pages_dir / suburl;
+        if (true == bfs::exists(page_file))
         {
-            perror((std::string("error while openning file ") + Private::outfilename).c_str());
+            std::cout << "File: " << page_file.filename() << " is downloaded already." << std::endl;
         }
-        for (std::string line; std::getline(outfile_stream, line); )
+        else
         {
-            std::cout << line << std::endl;
+            std::cout << "Downloading page: " << url << std::endl;
+            Private::downloadUrl("http://www.bbc.co.uk" + url, page_file.string().c_str());
         }
-        if (true == outfile_stream.bad())
-        {
-            perror((std::string("error while reading file: ") + Private::outfilename).c_str());
-        }
-        outfile_stream.close();
     }
+
+    std::cout << "Pages in number = " << pages.size() << std::endl;
+
+    std::set<std::string> download_links;
+    const boost::regex re_links("(http:([\\w\\/\\.\\-]+)\\.(pdf|mp3))", boost::regex_constants::perl);
+    for (auto file: boost::make_iterator_range(bfs::directory_iterator(pages_dir), bfs::directory_iterator())
+            | ba::filtered(static_cast<bool (*)(const bfs::path &)>(&bfs::is_regular_file)))
+    {
+        Private::searchForRegex(file.path().string(), download_links, re_links);
+    }
+
+    std::copy(download_links.begin(), download_links.end(), std::ostream_iterator<std::string>(std::cout, "\n"));
+
+    std::cout << "Links in number = " << download_links.size() << std::endl;
+
 
 //    bpt::ptree pt;
 //    bpt::read_xml(Private::outfilename, pt, bpxml::trim_whitespace | bpxml::no_comments);
