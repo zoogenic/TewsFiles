@@ -86,7 +86,9 @@ namespace Private
         return 0;
     }
 
-    void searchForRegex(const std::string &filename, std::set<std::string> &pages, const boost::regex &re)
+
+    template <typename Container>
+    void collectUrls(const std::string &filename, const std::insert_iterator<Container> &it, const boost::regex &re)
     { // read file
         std::cout << "* trying to open and read: " << filename << std::endl;
         std::ifstream outfile_stream(filename);
@@ -98,7 +100,7 @@ namespace Private
         {
             std::copy(boost::sregex_token_iterator(line.begin(), line.end(), re, 0)
                     ,   boost::sregex_token_iterator()
-                    ,   std::inserter(pages, pages.begin())
+                    ,   it
                     );
         }
 
@@ -151,7 +153,7 @@ int main(int argc, char *argv[])
 
     //  /learningenglish/english/features/the-english-we-speak/ep-19082014
     const boost::regex re("(/learningenglish/english/features/the-english-we-speak/ep-(\\d+))", boost::regex_constants::perl);
-    Private::searchForRegex(Private::outfilename, pages, re);
+    Private::collectUrls(Private::outfilename, std::inserter(pages, pages.end()), re);
 
     for (auto url: pages)
     {
@@ -175,7 +177,25 @@ int main(int argc, char *argv[])
     for (auto file: boost::make_iterator_range(bfs::directory_iterator(pages_dir), bfs::directory_iterator())
             | ba::filtered(static_cast<bool (*)(const bfs::path &)>(&bfs::is_regular_file)))
     {
-        Private::searchForRegex(file.path().string(), download_links, re_links);
+        Private::collectUrls(file.path().string(), std::inserter(download_links, download_links.end()), re_links);
+    }
+
+    const bfs::path podcasts_dir = output_dir / "podcasts";
+    bfs::create_directories(podcasts_dir);
+
+    for (auto link: download_links)
+    {
+        const std::string fileName = link.substr(link.find_last_of("/") + 1);
+        const bfs::path podcast_file = podcasts_dir / fileName;
+        if (true == bfs::exists(podcast_file))
+        {
+            std::cout << "File: " << podcast_file.filename() << " is downloaded already." << std::endl;
+        }
+        else
+        {
+            std::cout << "Downloading file: " << link << std::endl;
+            Private::downloadUrl(link, podcast_file.string().c_str());
+        }
     }
 
     std::copy(download_links.begin(), download_links.end(), std::ostream_iterator<std::string>(std::cout, "\n"));
